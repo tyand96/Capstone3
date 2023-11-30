@@ -118,6 +118,18 @@ function deleteBlogPost(blogId) {
     return newBlogPosts;
 }
 
+function editBlogPost(blogPostId, newBlogPost) {
+    const blogPost = blogPosts.find((element) => element.id == blogPostId);
+    if (!blogPost) {
+        throw new BlogError(BlogErrorLocations.ID, `Blog post with ID "${blogPostId}" doesn't exist.`);
+    }
+
+    let newBlogPosts = blogPosts;
+    newBlogPosts[blogId] = newBlogPost
+
+    return newBlogPosts;
+}
+
 app.use(express.static("public"))
 app.use(bodyParser.urlencoded({extended: true}));
 
