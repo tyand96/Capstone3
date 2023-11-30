@@ -4,6 +4,7 @@ import multer from "multer";
 import {fileURLToPath} from "url";
 import {dirname, extname} from "path";
 import {Buffer} from "buffer";
+import { buffer } from "stream/consumers";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const BlogErrorLocations = {
@@ -71,6 +72,16 @@ function bufferToImgSource(imgData) {
     return imgSource;
 }
 
+function createBlogPost(reqBody, reqFile) {
+    blogPosts.push(new BlogPost(
+        reqBody.blogTitle,
+        reqBody.blogContent,
+        bufferToImgSource(reqFile.buffer),
+        reqBody.blogAuthor,
+        new Date()
+    ))
+}
+
 app.use(express.static("public"))
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -82,30 +93,33 @@ app.get("/", (req, res) => {
 
 app.post("/submit", (req, res) => {
     upload.single("blogImg")(req, res, function(err) {
+        
+        // An error with Multer.
         if (err instanceof multer.MulterError) {
             console.log(err);
             res.redirect(500, "/");
+
+        // An error with the type of file.
         } else if (err) {
             console.log(err.name, err.message);
             error = err;
             res.redirect("/");
+
+        // An error that the user did not select a file.
         } else if (!req.file) {
             error = new BlogError(BlogErrorLocations.IMAGE, "A file must be selected!");
             res.redirect("/");
+
+        // Everything was fine.
         } else {
+            // Make sure the other fields were valid.
             error = allFieldsValid(req);
             if (error) {
                 res.redirect("/");
+
+            // Now, create the blog post.
             } else {
-                const body = req.body;
-                const img = req.file;
-                blogPosts.push(new BlogPost(
-                    body.blogTitle,
-                    body.blogContent,
-                    bufferToImgSource(img.buffer),
-                    body.blogAuthor,
-                    new Date()
-                ));
+                createBlogPost(req.body, req.file);
                 console.log(blogPosts);
                 res.sendStatus(201);
             }
