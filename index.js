@@ -3,15 +3,14 @@ import bodyParser from "body-parser";
 import multer from "multer";
 import {fileURLToPath} from "url";
 import {dirname, extname} from "path";
-import {Buffer} from "buffer";
-import { buffer } from "stream/consumers";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const BlogErrorLocations = {
     TITLE: "title",
     CONTENT: "content",
     IMAGE: "image",
-    AUTHOR: "author"
+    AUTHOR: "author",
+    ID: "id"
 }
 
 class BlogError extends Error {
@@ -21,8 +20,28 @@ class BlogError extends Error {
     }
 }
 
+class BlogIdGen {
+    constructor() {
+        if (typeof BlogIdGen.instance === "object") {
+            return BlogIdGen.instance;
+        } 
+
+        this._counter = 0;
+
+        BlogIdGen.instance = this;
+        return this;
+    }
+
+    newId() {
+        this._counter++;
+        return this._counter;
+    }
+
+}
+
 let blogPosts = [];
 let error = null;
+let blogIdGenSingleton = new BlogIdGen();
 
 class BlogPost {
     constructor(title, content, photoUrl, author, date) {
@@ -31,6 +50,7 @@ class BlogPost {
         this.photoUrl = photoUrl;
         this.author = author;
         this.date = date;
+        this.id = blogIdGenSingleton.newId();
     }
 }
 
@@ -82,6 +102,18 @@ function createBlogPost(reqBody, reqFile) {
     ))
 }
 
+function deleteBlogPost(blogId) {
+    const newBlogPosts = blogPosts.filter((blogPost) => {
+        if (blogPost.id == blogId) {
+            return false;
+        } else {
+            return true;
+        }
+    });
+
+    return newBlogPosts;
+}
+
 app.use(express.static("public"))
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -125,6 +157,11 @@ app.post("/submit", (req, res) => {
             }
         }
     })
+})
+
+app.post("/delete", upload.single("blogDel"), (req, res, next) => {
+    blogPosts = deleteBlogPost(req.body.blogId);
+    res.sendStatus(201);
 })
 
 
