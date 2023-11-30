@@ -9,9 +9,15 @@
         <link rel="stylesheet" href="">
     </head>
     <body>
-        <form action="/submit" method="POST">
-            <input type="text" name="blog-name"/>
-            <input type="file" name="blog-img"/>
+        <form action="/submit" method="POST" enctype="multipart/form-data">
+            <input type="text" name="blogName"/>
+            <input type="text" name="blogTitle"/>
+            <input type="file" name="blogImg"/>
+            <input type="submit" name="submitButton"/>
         </form>    
+
+        <% if (locals.img) { %>
+            <img src=<%= img %> />
+        <% } %>
     </body>
 </html>
