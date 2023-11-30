@@ -111,6 +111,10 @@ function deleteBlogPost(blogId) {
         }
     });
 
+    if (newBlogPosts.length === blogPosts.length) {
+        throw new BlogError(BlogErrorLocations.ID, `Blog post with ID "${blogId}" doesn't exist.`);
+    }
+
     return newBlogPosts;
 }
 
