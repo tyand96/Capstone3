@@ -6,6 +6,20 @@ import {dirname, extname} from "path";
 import {Buffer} from "buffer";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const BlogErrorLocations = {
+    TITLE: "title",
+    CONTENT: "content",
+    IMAGE: "image",
+    AUTHOR: "author"
+}
+
+class BlogError extends Error {
+    constructor(location, message) {
+        super(message);
+        this.location = location;
+    }
+}
+
 let blogPosts = [];
 let error = null;
 
@@ -22,7 +36,7 @@ class BlogPost {
 function fileFilter(req, file, callback) {
     const ext = extname(file.originalname);
     if (ext !== '.png' && ext !== ".jpg" && ext !== ".jpeg") {
-        return callback(new Error("Only images are allowed!"));
+        return callback(new BlogError(BlogErrorLocations.IMAGE, "Only images are allowed!"));
     }
     callback(null, true);
 }
@@ -35,6 +49,20 @@ const upload = multer({storage: storage, fileFilter: fileFilter});
 function allFieldsValid(req) {
     console.log(req.body);
     console.log(req.file);
+    const body = req.body;
+
+    // No need to check the file because this has already been checked.
+    if (!body.blogTitle) {
+        return new BlogError(BlogErrorLocations.TITLE, "A title must be specified!");
+    } else if (!body.blogAuthor) {
+        return new BlogError(BlogErrorLocations.AUTHOR, "An author must be specified!");
+    } else if (!body.blogContent) {
+        return new BlogError(BlogErrorLocations.CONTENT, "There must be some content to the blog post!");
+    }
+
+    // Everything was specified.
+    return null;
+
 }
 
 function bufferToImgSource(imgData) {
@@ -48,21 +76,39 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 
 app.get("/", (req, res) => {
+    const errorMessage = error ? error.message : null;
     res.render("index.ejs", {error: error});
 });
 
 app.post("/submit", (req, res) => {
     upload.single("blogImg")(req, res, function(err) {
-        if (err) {
+        if (err instanceof multer.MulterError) {
+            console.log(err);
+            res.redirect(500, "/");
+        } else if (err) {
             console.log(err.name, err.message);
-            error = err.message;
+            error = err;
             res.redirect("/");
         } else if (!req.file) {
-            error = "A file must be selected!";
+            error = new BlogError(BlogErrorLocations.IMAGE, "A file must be selected!");
             res.redirect("/");
         } else {
-            error = null;
-            res.sendStatus(201);
+            error = allFieldsValid(req);
+            if (error) {
+                res.redirect("/");
+            } else {
+                const body = req.body;
+                const img = req.file;
+                blogPosts.push(new BlogPost(
+                    body.blogTitle,
+                    body.blogContent,
+                    bufferToImgSource(img.buffer),
+                    body.blogAuthor,
+                    new Date()
+                ));
+                console.log(blogPosts);
+                res.sendStatus(201);
+            }
         }
     })
 })
