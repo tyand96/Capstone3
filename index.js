@@ -163,6 +163,7 @@ app.post("/submit", (req, res) => {
     })
 })
 
+// Should probably be changed to a delete call.
 app.post("/delete", upload.single("blogDel"), (req, res) => {
     blogPosts = deleteBlogPost(req.body.blogId);
     res.sendStatus(201);
