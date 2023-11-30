@@ -7,6 +7,7 @@ import {Buffer} from "buffer";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 let blogPosts = [];
+let error = null;
 
 class BlogPost {
     constructor(title, content, photoUrl, author, date) {
@@ -47,12 +48,23 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 
 app.get("/", (req, res) => {
-    res.render("index.ejs");
+    res.render("index.ejs", {error: error});
 });
 
-app.post("/submit", upload.single("blogImg"), (req, res) => {
-    allFieldsValid(req);
-    res.sendStatus(202);
+app.post("/submit", (req, res) => {
+    upload.single("blogImg")(req, res, function(err) {
+        if (err) {
+            console.log(err.name, err.message);
+            error = err.message;
+            res.redirect("/");
+        } else if (!req.file) {
+            error = "A file must be selected!";
+            res.redirect("/");
+        } else {
+            error = null;
+            res.sendStatus(201);
+        }
+    })
 })
 
 
