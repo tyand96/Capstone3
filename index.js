@@ -163,7 +163,7 @@ app.post("/submit", (req, res) => {
     })
 })
 
-app.post("/delete", upload.single("blogDel"), (req, res, next) => {
+app.post("/delete", upload.single("blogDel"), (req, res) => {
     blogPosts = deleteBlogPost(req.body.blogId);
     res.sendStatus(201);
 })
